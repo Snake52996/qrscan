@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8"/>
+    <style>
+        #camera-video{
+            height: 100vh;
+            width: 100vw;
+            position: absolute;
+            left: 0;
+            top: 0;
+            margin: 0;
+            padding: 0;
+            object-fit: cover;
+            z-index: 1000;
+        }
+        .video-hide{
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <button id="start">开始扫码</button>
+    <video autoplay playsinline muted class="video-hide" id="camera-video">
+    </video>
+    <script src="https://unpkg.com/qrcode-decoder@0.3.1/dist/index.min.js"></script>
+    <script>
+        window.addEventListener('load', ()=>{
+            const video = document.getElementById('camera-video');
+            const button = document.getElementById('start');
+            button.addEventListener('click', () => {
+                if(!video.classList.contains('video-hide')) return;
+                if(navigator?.mediaDevices?.getUserMedia === undefined){
+                    alert('接口不可用，请更新浏览器并确定域名安全');
+                    return;
+                }
+                navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: "environment" },
+                    audio: false
+                }).then(stream => {
+                    if ('srcObject' in video){
+                        alert('使用srcObject');
+                        video.srcObject = stream;
+                    }else{
+                        alert('使用src');
+                        video.src = URL.createObjectURL(stream);
+                    }
+                    video.classList.remove('video-hide');
+                    let qr = new QrcodeDecoder();
+                    qr.decodeFromVideo(video).then(res => {
+                        alert(res.data);
+                        video.classList.add('video-hide');
+                        stream.getTracks().forEach(i => { i.stop(); });
+                    });
+                }).catch((err) => {
+                    alert('无法打开相机，请检查设备是否具有相机并已授予权限');
+                    alert(err.message)
+                });
+            });
+        });
+    </script>
+</body>
